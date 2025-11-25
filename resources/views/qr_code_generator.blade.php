@@ -12,29 +12,25 @@
             <div class="col-md-6">
                 <div class="card shadow-sm">
                     <div class="card-header text-center bg-primary text-white">
-                        <h3>QR Code Generator</h3>
+                        <h3>Data Penyewaan Tempat</h3>
                     </div>
                     <div class="card-body">
                         <form action="{{ route('qr.generate') }}" method="POST">
                             @csrf
                             <div class="mb-3">
-                                <label for="data" class="form-label">Data for QR Code</label>
+                                <label for="data" class="form-label">Nama</label>
                                 <input type="text" class="form-control" id="data" name="data" required>
                             </div>
                             <div class="mb-3">
-                                <label for="email" class="form-label">Email Penerima</label>
+                                <label for="email" class="form-label">Email</label>
                                 <input type="email" class="form-control" id="email" name="email" required>
                             </div>
                             <div class="mb-3">
-                                <label for="phone" class="form-label">Nomor HP (untuk Reminder)</label>
+                                <label for="phone" class="form-label">Nomor HP </label>
                                 <input type="text" class="form-control" id="phone" name="phone">
                             </div>
-                            <div class="mb-3">
-                                <label for="message" class="form-label">Pesan Reminder</label>
-                                <textarea class="form-control" id="message" name="message" rows="3"></textarea>
-                            </div>
                             <div class="d-grid">
-                                <button type="submit" class="btn btn-primary">Generate QR Code & Kirim Reminder</button>
+                                <button type="submit" class="btn btn-primary">Submit</button>
                             </div>
                         </form>
 
