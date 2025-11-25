@@ -21,8 +21,20 @@
                                 <label for="data" class="form-label">Data for QR Code</label>
                                 <input type="text" class="form-control" id="data" name="data" required>
                             </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Penerima</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Nomor HP (untuk Reminder)</label>
+                                <input type="text" class="form-control" id="phone" name="phone">
+                            </div>
+                            <div class="mb-3">
+                                <label for="message" class="form-label">Pesan Reminder</label>
+                                <textarea class="form-control" id="message" name="message" rows="3"></textarea>
+                            </div>
                             <div class="d-grid">
-                                <button type="submit" class="btn btn-primary">Generate QR Code</button>
+                                <button type="submit" class="btn btn-primary">Generate QR Code & Kirim Reminder</button>
                             </div>
                         </form>
 
