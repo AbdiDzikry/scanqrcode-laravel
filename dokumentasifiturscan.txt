@@ -1,0 +1,88 @@
+# Dokumentasi dan Analisis Fitur QR Code untuk Sistem Pemesanan Ruang Meeting
+
+## Konsep Dasar
+Aplikasi saat ini berfungsi sebagai "alat pembuat dan pembaca QR code" yang sederhana. Untuk sistem akses ruang meeting, kita perlu mengubahnya menjadi "sistem manajemen kunci digital" yang cerdas dan aman.
+
+Saat ini, QR code yang kita miliki ibarat "kunci rumah biasa" (statis dan bisa diduplikasi). Yang kita butuhkan adalah "kunci pintar" (dinamis, unik, dan terverifikasi).
+
+---
+
+## Kekurangan Fundamental Fitur Saat Ini
+
+### 1. QR Code Tidak Unik dan Tidak Aman
+- **Masalah:** Siapapun bisa membuat QR code dengan teks "Ruang Meeting A". Ini memungkinkan orang tanpa pemesanan untuk membuat "kunci" palsu.
+- **Solusi yang Dibutuhkan:** QR code harus berisi **token unik** yang dibuat secara acak untuk setiap pemesanan. Token ini harus disimpan di database dan terhubung dengan detail pemesanan (pengguna, waktu, ruangan).
+
+### 2. Tidak Ada Proses Validasi
+- **Masalah:** Pemindai saat ini hanya menampilkan isi dari QR code, tanpa memeriksa keabsahannya. Ia tidak tahu apakah kode tersebut valid, kedaluwarsa, atau untuk ruangan yang benar.
+- **Solusi yang Dibutuhkan:** Setelah pemindaian, token dari QR code harus dikirim ke backend untuk diverifikasi. Backend harus memeriksa:
+    - Apakah token ada di database?
+    - Apakah waktu pemindaian sesuai dengan jadwal pemesanan?
+    - Apakah token sudah pernah digunakan sebelumnya?
+    - Berdasarkan hasil validasi, sistem akan memberikan atau menolak akses.
+
+### 3. QR Code Dapat Digunakan Berulang Kali
+- **Masalah:** QR code yang sama dapat disimpan dan digunakan berkali-kali karena sifatnya yang statis.
+- **Solusi yang Dibutuhkan:** Setelah token berhasil digunakan untuk absen, statusnya di database harus diperbarui menjadi "sudah digunakan" untuk mencegah penggunaan berulang.
+
+### 4. Tidak Ada Identitas Pengguna
+- **Masalah:** Sistem tidak dapat mengidentifikasi **siapa** yang melakukan pemindaian, sehingga tidak bisa mencatat kehadiran secara akurat.
+- **Solusi yang Dibutuhkan:** Implementasi sistem **login dan registrasi pengguna**. Dengan begitu, setiap pemesanan dan absensi dapat ditautkan ke akun pengguna tertentu.
+
+---
+
+## Kesimpulan
+Untuk mengembangkan aplikasi ini sesuai konsep, prioritas selanjutnya adalah membangun logika backend dan database yang mencakup:
+- Manajemen Pengguna (User)
+- Manajemen Ruangan (Room)
+- Manajemen Pemesanan (Booking)
+- Sistem pembuatan dan validasi Token Unik untuk setiap pemesanan.
+
+---
+
+## Rencana dan Cara Pengembangan Fitur
+
+Berikut adalah langkah-langkah teknis untuk membangun sistem ini di Laravel:
+
+### Langkah 1: Membangun Pondasi Database (Model & Migrasi)
+Kita perlu membuat tabel di database untuk menyimpan data pengguna, ruangan, dan pemesanan.
+
+1.  **Tabel `users`**: Sudah ada bawaan dari Laravel.
+2.  **Tabel `rooms`**: Untuk menyimpan data ruang meeting.
+    - `php artisan make:model Room -m`
+    - Di file migrasi, tambahkan kolom seperti: `name` (string), `capacity` (integer).
+3.  **Tabel `bookings`**: Untuk menyimpan data pemesanan.
+    - `php artisan make:model Booking -m`
+    - Di file migrasi, tambahkan kolom seperti: `user_id` (foreign key ke users), `room_id` (foreign key ke rooms), `start_time` (datetime), `end_time` (datetime), `token` (string, unique), `status` (string, misal: 'aktif', 'selesai', 'dibatalkan').
+4.  Jalankan migrasi: `php artisan migrate`.
+
+### Langkah 2: Sistem Otentikasi Pengguna
+Cara termudah adalah menggunakan **Laravel Breeze**.
+1.  Install Breeze: `composer require laravel/breeze --dev`
+2.  Jalankan instalasi: `php artisan breeze:install` (pilih stack "Blade"). Ini akan otomatis membuat halaman login, registrasi, dan dashboard.
+
+### Langkah 3: Logika Pembuatan Pemesanan (Booking)
+1.  **Buat Controller**: `php artisan make:controller BookingController`
+2.  **Buat Halaman Form**: Buat halaman Blade dengan formulir untuk memilih ruangan, tanggal, dan waktu.
+3.  **Proses di Controller**: Di dalam `BookingController`, buat method `store()` untuk:
+    - Memvalidasi input dari form.
+    - Mengecek ketersediaan ruangan pada jadwal yang dipilih.
+    - Jika tersedia, buat **token unik**: `$token = Str::random(40);`
+    - Simpan data pemesanan (termasuk token) ke tabel `bookings`.
+    - Arahkan pengguna ke halaman konfirmasi pemesanan yang menampilkan detail dan QR code.
+
+### Langkah 4: Integrasi Pembuatan QR Code
+1.  **Hapus Halaman Generator Terpisah**: Fitur `/qr-generator` yang kita buat sebelumnya tidak lagi relevan.
+2.  **Tampilkan QR Code setelah Booking**: Di halaman konfirmasi pemesanan (dari Langkah 3), panggil library `chillerlan/qrcode` untuk membuat QR code yang isinya adalah **token unik pemesanan** (`$booking->token`), bukan teks biasa.
+
+### Langkah 5: Logika Validasi Pindai QR Code (Backend)
+1.  **Buat Route API**: Buat rute baru di `routes/api.php`, misalnya `POST /validate-scan`. Rute ini akan menerima token dari hasil pindaian.
+2.  **Buat Controller API**: `php artisan make:controller Api/ScanController`
+3.  **Modifikasi JavaScript Pemindai**: Di halaman `/qr-scanner`, ubah fungsi `onScanSuccess`:
+    - Gunakan **Fetch API** JavaScript untuk mengirim token yang berhasil dipindai ke rute `/api/validate-scan`.
+4.  **Proses Validasi di `ScanController`**:
+    - Cari pemesanan di database berdasarkan `token`.
+    - **Lakukan validasi**: Apakah pemesanan ada? Apakah waktunya sesuai? Apakah statusnya masih 'aktif'?
+    - Jika valid, ubah status pemesanan menjadi 'selesai' atau catat kehadiran.
+    - Kembalikan response dalam bentuk JSON, misalnya: `return response()->json(['status' => 'success', 'message' => 'Selamat Datang, Nama Pengguna!']);`
+5.  **Tampilkan Hasil di Halaman Pemindai**: JavaScript akan menerima response JSON dari backend dan menampilkan pesan (sukses atau gagal) kepada pengguna.
